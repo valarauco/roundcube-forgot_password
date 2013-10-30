@@ -16,7 +16,7 @@ class forgot_password extends rcube_plugin
 
 	function init() 
 	{
-		define('TOKEN_EXPIRATION_TIME_MIN', 20);
+		define('TOKEN_EXPIRATION_TIME_MIN', 10);
 		$rcmail = rcmail::get_instance();
 		$this->add_texts('localization/');
 
@@ -61,7 +61,7 @@ class forgot_password extends rcube_plugin
 
 		//add input alternative_email. I didn't use include_script because I need to cancatenate $userrec['alternative_email']
 		$js = '$(document).ready(function($){' .
-			'$("#password-form table").prepend(\'<tr><td class="title"><label for="alternative_email">Email Secundário:</label></td>' .
+			'$("#password-form table").prepend(\'<tr><td class="title"><label for="alternative_email">'.$this->gettext('alternativeemail').':</label></td>' .
 			'<td><input type="text" autocomplete="off" size="20" id="alternative_email" name="_alternative_email" value="' . $userrec['alternative_email'] . '"></td></tr>\');' .
 			'form_action = $("#password-form").attr("action");' .
 			'form_action = form_action.replace("plugin.password-save","plugin.password-save-forgot_password");' .
@@ -164,7 +164,7 @@ class forgot_password extends rcube_plugin
 		$rcmail = rcmail::get_instance();
 		$sql_result = $rcmail->db->query("SELECT * FROM ".get_table_name('users')." u " .
 										" INNER JOIN forgot_password fp on u.user_id = fp.user_id " .
-										" WHERE fp.token=? and token_expiration >= now()", get_input_value('_t',RCUBE_INPUT_GET));
+										" WHERE fp.token=? and token_expiration <= now()", get_input_value('_t',RCUBE_INPUT_GET));
 		$userrec = $rcmail->db->fetch_assoc($sql_result);
 		if($userrec)
 		{
@@ -196,7 +196,7 @@ class forgot_password extends rcube_plugin
 		if($user) 
 		{
 			// get user row
-			$sql_result = $rcmail->db->query("SELECT u.user_id, fp.alternative_email, fp.token_expiration, fp.token_expiration < now() as token_expired " .
+			$sql_result = $rcmail->db->query("SELECT u.user_id, u.username, fp.alternative_email, fp.token_expiration, fp.token_expiration < now() as token_expired " .
 											"	FROM ".get_table_name('users')." u " .
 											" INNER JOIN forgot_password fp on u.user_id = fp.user_id " .
 											" WHERE  u.username=?", $user);
@@ -206,10 +206,10 @@ class forgot_password extends rcube_plugin
 			{
 				if($userrec['token_expiration'] && !$userrec['token_expired']) 
 				{
-					$message = $this->gettext('checkaccount','forgot_password');
-					$type = 'confirmation';
+					$message = $this->gettext('autobanned','forgot_password');
+					$type = 'error';
 				} else {
-					if($this->send_email_with_token($userrec['user_id'], $userrec['alternative_email'])) 
+					if($this->send_email_with_token($userrec['user_id'], $userrec['username'], $userrec['alternative_email'])) 
 					{
 						$message = $this->gettext('checkaccount','forgot_password');
 						$type = 'confirmation';
@@ -258,17 +258,7 @@ class forgot_password extends rcube_plugin
 		return $a;
 	}
 
-	function html($p) 
-	{
-		$rcmail = rcmail::get_instance();
-		$content = "<h1>asfasdfasdf" . taskbar . "</h1>";
-
-		$rcmail->output->add_footer($content);
-
-		return $p;
-	}
-
-	private function send_email_with_token($user_id, $alternative_email) 
+	private function send_email_with_token($user_id, $email, $alternative_email) 
 	{
 		$rcmail = rcmail::get_instance();
 		$token = md5($alternative_email.microtime());
@@ -284,7 +274,7 @@ class forgot_password extends rcube_plugin
 
 		return $this->send_html_and_text_email(
 			$alternative_email,
-			$this->get_from_email($alternative_email),
+			$this->get_from_email($email),
 			$subject,
 			$body
 		);
@@ -318,36 +308,11 @@ class forgot_password extends rcube_plugin
 
 		$ctb = md5(rand() . microtime());
 		$headers  = "Return-Path: $from\r\n";
-		$headers .= "MIME-Version: 1.0\r\n";
-		$headers .= "Content-Type: multipart/alternative; boundary=\"=_$ctb\"\r\n";
 		$headers .= "Date: " . date('r', time()) . "\r\n";
 		$headers .= "From: $from\r\n";
 		$headers .= "To: $to\r\n";
 		$headers .= "Subject: $subject\r\n";
 		$headers .= "Reply-To: $from\r\n";
-
-		$msg_body .= "Content-Type: multipart/alternative; boundary=\"=_$ctb\"\r\n\r\n";
-
-		$txt_body  = "--=_$ctb";
-		$txt_body .= "\r\n";
-		$txt_body .= "Content-Transfer-Encoding: 7bit\r\n";
-		$txt_body .= "Content-Type: text/plain; charset=" . RCMAIL_CHARSET . "\r\n";
-		$LINE_LENGTH = $rcmail->config->get('line_length', 75);
-		$h2t = new html2text($body, false, true, 0);
-		$txt = rc_wordwrap($h2t->get_text(), $LINE_LENGTH, "\r\n");
-		$txt = wordwrap($txt, 998, "\r\n", true);
-		$txt_body .= "$txt\r\n";
-		$txt_body .= "--=_$ctb";
-		$txt_body .= "\r\n";
-
-		$msg_body .= $txt_body;
-
-		$msg_body .= "Content-Transfer-Encoding: quoted-printable\r\n";
-		$msg_body .= "Content-Type: text/html; charset=" . RCMAIL_CHARSET . "\r\n\r\n";
-		$msg_body .= str_replace("=","=3D",$body);
-		$msg_body .= "\r\n\r\n";
-		$msg_body .= "--=_$ctb--";
-		$msg_body .= "\r\n\r\n";
 
 		// send message
 		if (!is_object($rcmail->smtp)) 
@@ -361,7 +326,7 @@ class forgot_password extends rcube_plugin
 		}
 
 		$rcmail->smtp->connect();
-		if($rcmail->smtp->send_mail($from, $to, $headers, $msg_body)) 
+		if($rcmail->smtp->send_mail($from, $to, $headers, $body))
 		{
 			return true;
 		} else {
