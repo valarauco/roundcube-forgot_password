@@ -1,10 +1,10 @@
 <?php
 
 $labels = array(
-	'forgotpassword' => 'Esqueci minha senha',
+	'forgotpassword' => 'Forgot my password',
 	'passwordrecovery' => 'Forgot Password',
-	'email_subject' => 'Instruções para gerar nova senha',
-	'admin_alert_email_subject' => 'Solicitação de troca de senha',
+	'email_subject' => 'Instructions to generate new password',
+	'admin_alert_email_subject' => 'Request for new password',
 	'pwreminder' => 'Password Reminder',
 	'forgot_passwordenabled' => 'Reminder enabled',
 	'forgot_passwordisenabled' => 'Reminder is enabled',
@@ -18,9 +18,9 @@ $labels = array(
 	'forgot_passwordresetpw' => 'Enviar',
 	'forgot_passwordexit' => 'Cancelar',
 	'new_password' => 'Nova senha',
-	'new_password_confirmation' => 'Confirmação',
-	'no_alternative_email_warning' => 'Cadastre um email alternativo.',
-	'click_here' => 'clique aqui'
+	'new_password_confirmation' => 'Confirmation',
+	'no_alternative_email_warning' => 'You need to set an alternative email',
+	'click_here' => 'Click here'
 );
 
 $messages = array(
@@ -30,19 +30,19 @@ $messages = array(
 	'forgot_passwordanswernotmatch' => 'Secret Answer does not match',
 	'forgot_passwordactive' => 'Password Reminder will be enabled',
 	'forgot_passwordinactive' => 'Password Reminder is disabled',
-	'forgot_passwordusernotfound' => 'Usuário não encontrado',
+	'forgot_passwordusernotfound' => 'User not found',
 	'forgot_passwordimcomplete' => 'Your Reminder Settings are incomplete. Please contact the Administrator',
 	'forgot_passwordfailed' => 'Secret Answer is incorrect.',
-	'sendingfailed' => 'Ocorreu um erro ao enviar o email com instruções para gerar uma nova senha. Por favor tente novamente mais tarde',
-	'checkaccount' => 'Foi enviado um email com instruções para gerar uma nova senha para seu email alternativo.',
-	'senttoadmin' => 'Sua conta não possui um email alternativo cadastrado, por isso foi enviado um email para o Administrador trocar sua senha.',
-	'autobanned' => 'Access is temporarilly locked (too much invalid login attempts). Please try later.',
+	'sendingfailed' => 'An error ocurred, try again later or contact the administrator',
+	'checkaccount' => 'And email has been sent to your alternative email account with instructions to reset your password',
+	'senttoadmin' => 'You haven\'t set an alternative email, instead your administrator has been notified',
+	'autobanned' => 'Access is temporarilly locked (too many invalid login attempts). Please try later.',
 	'nodeleteforgot_passwordaddress' => 'This identity is linked to your Password reminder.',
-	'invalidtoken' => 'Token inválido.',
-	'password_confirmation_invalid' => 'Confirmação de senha inválida',
-	'password_changed' => 'Senha alterada com sucesso.',
-	'password_not_changed' => 'Ocorreu um erro ao alterar a senha. Por favor tente novamente mais tarde.',
-	'notice_no_alternative_email_warning' => 'Você não possui um email alternativo cadastrado, %s para cadastrar.',
-	'alternative_email_updated' => 'Seu email alternativo foi alterado.',
-	'alternative_email_invalid' => 'Informe um email alternativo válido.'
+	'invalidtoken' => 'Invalid token',
+	'password_confirmation_invalid' => 'Password confirmation invalid',
+	'password_changed' => 'Password changed successfully',
+	'password_not_changed' => 'An error ocurred, try again later or contact the administrator',
+	'notice_no_alternative_email_warning' => 'You don\'t have an alternative email set, %s to set.',
+	'alternative_email_updated' => 'Your alternative email has been changed',
+	'alternative_email_invalid' => 'Invalid alternative email'
 );
