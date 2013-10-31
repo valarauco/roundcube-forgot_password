@@ -16,17 +16,17 @@ $labels = array(
 	'forgot_passwordanswerconfirm' => 'Confirm Secret Answer',
 	'forgot_passwordaddidentity' => 'Please add an identity',
 	'forgot_passwordadd' => 'add',
-	'forgot_passwordresetpw' => 'Enviar',
-	'forgot_passwordexit' => 'Cancelar',
-	'new_password' => 'Nova senha',
-	'new_password_confirmation' => 'Confirmation',
+	'forgot_passwordresetpw' => 'Send',
+	'forgot_passwordexit' => 'Cancel',
+	'new_password' => 'New password',
+	'new_password_confirmation' => 'Repeat password',
 	'no_alternative_email_warning' => 'You need to set an alternative email',
 	'click_here' => 'Click here'
 );
 
 $messages = array(
 	'forgot_passwordquestionempty' => 'Please enter your Secret Question',
-	'forgot_passworduserempty' => 'Por favor informe seu E-mail',
+	'forgot_passworduserempty' => 'Please enter your email',
 	'forgot_passwordanswerempty' => 'Please enter your Secret Answer',
 	'forgot_passwordanswernotmatch' => 'Secret Answer does not match',
 	'forgot_passwordactive' => 'Password Reminder will be enabled',
