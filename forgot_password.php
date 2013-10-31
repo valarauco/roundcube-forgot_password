@@ -164,7 +164,7 @@ class forgot_password extends rcube_plugin
 		$rcmail = rcmail::get_instance();
 		$sql_result = $rcmail->db->query("SELECT * FROM ".get_table_name('users')." u " .
 										" INNER JOIN forgot_password fp on u.user_id = fp.user_id " .
-										" WHERE fp.token=? and token_expiration <= now()", get_input_value('_t',RCUBE_INPUT_GET));
+										" WHERE fp.token=? and token_expiration >= now()", get_input_value('_t',RCUBE_INPUT_GET));
 		$userrec = $rcmail->db->fetch_assoc($sql_result);
 		if($userrec)
 		{
