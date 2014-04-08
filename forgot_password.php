@@ -80,7 +80,14 @@ class forgot_password extends rcube_plugin
 
 		if(preg_match('/.+@[^.]+\..+/Umi',$alternative_email)) 
 		{
-			$rcmail->db->query("REPLACE INTO forgot_password(alternative_email, user_id) values(?,?)",$alternative_email,$rcmail->user->ID);
+			$sql_result = $rcmail->db->query('SELECT alternative_email FROM forgot_password ' .
+												' WHERE user_id = ? ', $rcmail->user->ID);
+			$userrec = $rcmail->db->fetch_assoc($sql_result);
+			if($userrec) {
+				$rcmail->db->query("UPDATE forgot_password SET alternative_email = ? WHERE user_id = ?",$alternative_email,$rcmail->user->ID);
+			} else {
+				$rcmail->db->query("INSERT INTO forgot_password(alternative_email, user_id) values(?,?)",$alternative_email,$rcmail->user->ID);
+			}
 			$message = $this->gettext('alternative_email_updated','forgot_password');
 			$rcmail->output->command('display_message', $message, 'confirmation');
 		} else {
@@ -263,7 +270,7 @@ class forgot_password extends rcube_plugin
 		$rcmail = rcmail::get_instance();
 		$token = md5($alternative_email.microtime());
 		$sql = "UPDATE forgot_password " .
-				" SET token='$token', token_expiration=now() + INTERVAL " . TOKEN_EXPIRATION_TIME_MIN . " MINUTE" .
+				" SET token='$token', token_expiration=now() + INTERVAL '" . TOKEN_EXPIRATION_TIME_MIN . " MINUTE'" .
 				" WHERE user_id=$user_id";
 		$rcmail->db->query($sql);
 
