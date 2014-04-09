@@ -9,5 +9,5 @@ function forgot_password()
 }
 
 $(document).ready(function($) {
-	$('#rcmloginpwd').after('<a class="home" id="forgot_password" href="javascript:forgot_password();">' + rcmail.gettext('forgotpassword','forgot_password') + '</a>');
+	$('#rcmloginpwd').after('<p id="forgot_password"><a class="home" href="javascript:forgot_password();">' + rcmail.gettext('forgotpassword','forgot_password') + '</a></p>');
 });

@@ -22,7 +22,7 @@ class forgot_password extends rcube_plugin
 
 		if($rcmail->task == 'mail') 
 		{
-			$this->include_stylesheet('css/forgot_password.css');
+			$this->include_stylesheet($this->local_skin_path() . '/forgot_password.css');
 			$this->add_hook('messages_list', array($this, 'show_warning_alternative_email'));
 			$this->add_hook('render_page', array($this, 'add_labels_to_mail_page'));
 		} else {
@@ -36,6 +36,7 @@ class forgot_password extends rcube_plugin
 				$this->register_action('plugin.password-save-forgot_password', array($this, 'password_save'));
 			} else {
 				$this->include_script('js/forgot_password.js');
+				$this->include_stylesheet($this->local_skin_path() . '/forgot_password_login.css');
 			}
 
 			$this->load_config('config.inc.php');
