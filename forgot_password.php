@@ -315,11 +315,36 @@ class forgot_password extends rcube_plugin
 
 		$ctb = md5(rand() . microtime());
 		$headers  = "Return-Path: $from\r\n";
+		$headers .= "MIME-Version: 1.0\r\n";
+		$headers .= "Content-Type: multipart/alternative; boundary=\"=_$ctb\"\r\n";
 		$headers .= "Date: " . date('r', time()) . "\r\n";
 		$headers .= "From: $from\r\n";
 		$headers .= "To: $to\r\n";
 		$headers .= "Subject: $subject\r\n";
 		$headers .= "Reply-To: $from\r\n";
+
+		$msg_body .= "Content-Type: multipart/alternative; boundary=\"=_$ctb\"\r\n\r\n";
+
+		$txt_body  = "--=_$ctb";
+		$txt_body .= "\r\n";
+		$txt_body .= "Content-Transfer-Encoding: 7bit\r\n";
+		$txt_body .= "Content-Type: text/plain; charset=" . RCMAIL_CHARSET . "\r\n";
+		$LINE_LENGTH = $rcmail->config->get('line_length', 75);
+		$h2t = new html2text($body, false, true, 0);
+		$txt = rc_wordwrap($h2t->get_text(), $LINE_LENGTH, "\r\n");
+		$txt = wordwrap($txt, 998, "\r\n", true);
+		$txt_body .= "$txt\r\n";
+		$txt_body .= "--=_$ctb";
+		$txt_body .= "\r\n";
+
+		$msg_body .= $txt_body;
+
+		$msg_body .= "Content-Transfer-Encoding: quoted-printable\r\n";
+		$msg_body .= "Content-Type: text/html; charset=" . RCMAIL_CHARSET . "\r\n\r\n";
+		$msg_body .= str_replace("=","=3D",$body);
+		$msg_body .= "\r\n\r\n";
+		$msg_body .= "--=_$ctb--";
+		$msg_body .= "\r\n\r\n";
 
 		// send message
 		if (!is_object($rcmail->smtp)) 
@@ -333,7 +358,7 @@ class forgot_password extends rcube_plugin
 		}
 
 		$rcmail->smtp->connect();
-		if($rcmail->smtp->send_mail($from, $to, $headers, $body))
+		if($rcmail->smtp->send_mail($from, $to, $headers, $msg_body))
 		{
 			return true;
 		} else {
