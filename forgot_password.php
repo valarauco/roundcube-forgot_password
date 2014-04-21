@@ -89,6 +89,9 @@ class forgot_password extends rcube_plugin
 			} else {
 				$rcmail->db->query("INSERT INTO forgot_password(alternative_email, user_id) values(?,?)",$alternative_email,$rcmail->user->ID);
 			}
+			write_log('forgot_password', sprintf('Updated alternative email for user %s (ID: %d) from %s: %s -> %s',
+                    $userrec['username'], $userrec['user_id'], rcmail_remote_ip(), $userrec['alternative_email'],
+                    $alternative_email));
 			$message = $this->gettext('alternative_email_updated','forgot_password');
 			$rcmail->output->command('display_message', $message, 'confirmation');
 		} else {
@@ -97,6 +100,7 @@ class forgot_password extends rcube_plugin
 		}
 
 		$password_plugin = new password($this->api);
+		$password_plugin->load_config();
 		
 		if($_REQUEST['_curpasswd'] || $_REQUEST['_newpasswd'] || $_REQUEST['_confpasswd']) 
 		{
@@ -132,36 +136,35 @@ class forgot_password extends rcube_plugin
 
 		$rcmail = rcmail::get_instance();
 
-		$new_password = get_input_value('_new_password',RCUBE_INPUT_POST);
-		$new_password_confirmation = get_input_value('_new_password_confirmation',RCUBE_INPUT_POST);
+		//$new_password = get_input_value('_new_password',RCUBE_INPUT_POST);
+		//$new_password_confirmation = get_input_value('_new_password_confirmation',RCUBE_INPUT_POST);
 		$token = get_input_value('_t',RCUBE_INPUT_POST);
-
-		if($new_password && $new_password == $new_password_confirmation)
-		{
-			$rcmail->db->query("UPDATE ".get_table_name('users').
-				" SET password=? " .
-				" WHERE user_id=(SELECT user_id FROM forgot_password WHERE token=?)",
-				array($rcmail->encrypt($new_password), $token)
-			);
-
-			if($rcmail->db->affected_rows()==1)
-			{
-				$rcmail->db->query("UPDATE forgot_password set token=null, token_expiration=null WHERE token=?",$token);
-
-				$message = $this->gettext('password_changed','forgot_password');
-				$type = 'confirmation';
-			} else {
-				$message = $this->gettext('password_not_changed','forgot_password');
-				$type = 'error';
-			}
-
-			$rcmail->output->command('display_message', $message, $type);
-			$rcmail->output->send('login');
+		
+		//valarauco//
+		$password_plugin = new password($this->api);
+		$password_plugin->load_config();
+		$sql_result = $rcmail->db->query('SELECT user_id FROM forgot_password WHERE token=?', $token);
+		$userrec = $rcmail->db->fetch_assoc($sql_result);
+		if($userrec['user_id']) {
+		  $rcmail->user = new rcube_user($userrec['user_id']);
 		} else {
-			$message = $this->gettext('password_confirmation_invalid','forgot_password');
-			$rcmail->output->command('display_message', $message, 'error');
-			$rcmail->output->send('forgot_password.new_password_form');
+		  write_log('forgot_password', "ERROR no user for token: ".$token.", IP: [".rcmail_remote_ip()."]");
+			$message = $this->gettext('password_not_changed','forgot_password');
+			$type = 'error';
+			return;
 		}
+		$rcmail->config->set('password_confirm_current', false);
+		if ($password_plugin->password_save_mech()) {
+		  $rcmail->db->query("UPDATE forgot_password set token=null, token_expiration=null WHERE token=?",$token);
+		  write_log('forgot_password', sprintf('Password reset for user %s (ID: %d) from %s',
+                        $rcmail->user->get_username(), $rcmail->user->ID, rcmail_remote_ip()));
+		  $rcmail->kill_session();
+		  $rcmail->output->send('login');
+
+	  } else {
+		  $rcmail->output->send('forgot_password.new_password_form');
+		}
+		//valarauco//
 	}
 
 	function new_password_form($a)
@@ -219,15 +222,21 @@ class forgot_password extends rcube_plugin
 				} else {
 					if($this->send_email_with_token($userrec['user_id'], $userrec['username'], $userrec['alternative_email'])) 
 					{
+					  write_log('forgot_password', sprintf('Requested password reset for user %s (ID: %d) from %s',
+                        $userrec['username'], $userrec['user_id'], rcmail_remote_ip()));
 						$message = $this->gettext('checkaccount','forgot_password');
 						$type = 'confirmation';
 					} else {
+					  write_log('forgot_password', sprintf('Requested password reset failed for user %s from %s',
+                        $user, rcmail_remote_ip()));
 						$message = $this->gettext('sendingfailed','forgot_password');
 						$type = 'error';
 					}
 				}
 			} else {
 				$this->send_alert_to_admin($user);
+				write_log('forgot_password', sprintf('Requested password reset for user %s from %s, sent to Admin!',
+                       $user, $userrec['user_id'], rcmail_remote_ip()));
 				$message = $this->gettext('senttoadmin','forgot_password');
 				$type = 'notice';
 			}

@@ -2,6 +2,6 @@ This plugin sends a link to the user's alternative email, than he can generate a
 
 This plugin needs the table forgot_password, which script is in SQL folder.
 
-This plugin depends on the plugin password. In main.in.php, the plugin password must be before plugin forgot_password, because in forgot_password, the plugin password is called.
+This plugin depends on the plugin password. In main.in.php, the plugin password must be before plugin forgot_password, because in forgot_password, the plugin password is called. *WARNING* This plugin depends on an modified versión of plugin password: https://github.com/valarauco/roundcube-password. This versión adds a function to use password-drivers mechanism instead of SQL only to change password.
 
 To show the link "forgot my password" it necessary to activate the taskbar plugin or change the div to append the link in js/forgot_password.js
