@@ -90,7 +90,7 @@ class forgot_password extends rcube_plugin
 				$rcmail->db->query("INSERT INTO forgot_password(alternative_email, user_id) values(?,?)",$alternative_email,$rcmail->user->ID);
 			}
 			write_log('forgot_password', sprintf('Updated alternative email for user %s (ID: %d) from %s: %s -> %s',
-                    $userrec['username'], $userrec['user_id'], rcmail_remote_ip(), $userrec['alternative_email'],
+                    $rcmail->user->get_username(), $rcmail->user->ID, rcmail_remote_ip(), $userrec['alternative_email'],
                     $alternative_email));
 			$message = $this->gettext('alternative_email_updated','forgot_password');
 			$rcmail->output->command('display_message', $message, 'confirmation');
