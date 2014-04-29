@@ -226,10 +226,9 @@ class forgot_password extends rcube_plugin
 
 	function new_password_do($a)
 	{
-		if($a['action'] != 'plugin.new_password_do' || !isset($_SESSION['temp']))
+	  $rcmail = rcmail::get_instance();
+		if($a['action'] != 'plugin.new_password_do' || !isset($_SESSION['temp']) || !$rcmail->check_request(RCUBE_INPUT_POST))
 			return $a;
-
-		$rcmail = rcmail::get_instance();
 
 		//$new_password = get_input_value('_new_password',RCUBE_INPUT_POST);
 		//$new_password_confirmation = get_input_value('_new_password_confirmation',RCUBE_INPUT_POST);
@@ -238,7 +237,7 @@ class forgot_password extends rcube_plugin
 		//valarauco//
 		$password_plugin = new password($this->api);
 		$password_plugin->load_config();
-		$sql_result = $rcmail->db->query('SELECT user_id FROM forgot_password WHERE token=?', $token);
+		$sql_result = $rcmail->db->query('SELECT user_id, alternative_email FROM forgot_password WHERE token=?', $token);
 		$userrec = $rcmail->db->fetch_assoc($sql_result);
 		if($userrec['user_id']) {
 		  $rcmail->user = new rcube_user($userrec['user_id']);
@@ -251,9 +250,12 @@ class forgot_password extends rcube_plugin
 		$rcmail->config->set('password_confirm_current', false);
 		if ($password_plugin->password_save_mech()) {
 		  $rcmail->db->query("UPDATE forgot_password set token=null, token_expiration=null WHERE token=?",$token);
+		  $this->send_email_with_notification(
+		                      array($rcmail->user->get_username(), $userrec['alternative_email']), 'password_changed');
 		  write_log('forgot_password', sprintf('Password reset for user %s (ID: %d) from %s',
                         $rcmail->user->get_username(), $rcmail->user->ID, rcmail_remote_ip()));
 		  $rcmail->kill_session();
+		  $rcmail->set_task('login');
 		  $rcmail->output->send('login');
 
 	  } else {
@@ -287,15 +289,14 @@ class forgot_password extends rcube_plugin
 
 	function forgot_password_reset($a) 
 	{
-		if($a['action'] != "plugin.forgot_password_reset" || !isset($_SESSION['temp']))
+	  $rcmail = rcmail::get_instance();
+		if($a['action'] != "plugin.forgot_password_reset" || !isset($_SESSION['temp']) ||  !$rcmail->check_request(RCUBE_INPUT_POST))
 			return $a;
 
 		// kill remember_me cookies
 		setcookie ('rememberme_user','',time()-3600);
 		setcookie ('rememberme_pass','',time()-3600);
-
-		$rcmail = rcmail::get_instance();
-
+		
 		//user must be user@domain
 		$user = trim(urldecode(get_input_value('_username',RCUBE_INPUT_POST)));
 		
@@ -345,7 +346,7 @@ class forgot_password extends rcube_plugin
 				$type = 'notice';
 			}
 		} else {
-			$message = $this->gettext('userempty','forgot_password');
+			$message = $this->gettext('forgot_passworduserempty','forgot_password');
 			$type = 'error';
 		}
 
