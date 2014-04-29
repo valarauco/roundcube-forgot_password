@@ -2,9 +2,9 @@ function forgot_password()
 {
 	if($('#rcmloginuser').val())
 	{
-		document.location.href = "./?_task=settings&_action=plugin.forgot_password_reset&_username=" + escape($('#rcmloginuser').val());
+		rcmail.http_post('plugin.forgot_password_reset', "_username=" + escape($('#rcmloginuser').val())+"&_token="+document.form.elements['_token'].value);
 	} else {
-		rcmail.display_message(rcmail.gettext('forgot_passworduserempty','forgot_password'),'error');
+		rcmail.display_message(rcmail.gettext('forgot_passworduserempty','forgot_password'),'error',10000);
 	}
 }
 
