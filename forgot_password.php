@@ -341,7 +341,7 @@ class forgot_password extends rcube_plugin
 			} else {
 				$this->send_alert_to_admin($user);
 				write_log('forgot_password', sprintf('Requested password reset for user %s from %s, sent to Admin!',
-                       $user, $userrec['user_id'], rcmail_remote_ip()));
+                       $user, rcmail_remote_ip()));
 				$message = $this->gettext('senttoadmin','forgot_password');
 				$type = 'notice';
 			}
