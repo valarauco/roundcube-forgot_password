@@ -24,17 +24,20 @@ class forgot_password extends rcube_plugin
 		if($rcmail->task == 'mail') 
 		{
 			$this->include_stylesheet($this->local_skin_path() . '/forgot_password.css');
+			$this->include_script('js/forgot_password_alert.js');
 			$this->add_hook('messages_list', array($this, 'show_warning_alternative_email'));
 			$this->add_hook('render_page', array($this, 'add_labels_to_mail_page'));
 		} else {
 			if($rcmail->task == 'settings') 
 			{
-				if($rcmail->action == 'plugin.password' || $rcmail->action == 'plugin.password-save-forgot_password') 
+			  $this->add_hook('identity_form', array($this, 'add_field_alternative_email'));
+				$this->add_hook('identity_update', array($this, 'update_alternative_email'));
+				/*if($rcmail->action == 'plugin.password' || $rcmail->action == 'plugin.password-save-forgot_password') 
 				{
 					$this->add_hook('render_page', array($this, 'add_field_alternative_email_to_form'));
 				}
 
-				$this->register_action('plugin.password-save-forgot_password', array($this, 'password_save'));
+				$this->register_action('plugin.password-save-forgot_password', array($this, 'password_save'));*/
 			} else {
 				$this->include_script('js/forgot_password.js');
 				$this->include_stylesheet($this->local_skin_path() . '/forgot_password_login.css');
@@ -53,8 +56,85 @@ class forgot_password extends rcube_plugin
 			$this->register_action('plugin.new_password_do', array($this, 'new_password_do'));
 		}
 	}
+	
+	function add_field_alternative_email($a)
+	{
+	  if (is_array($a['form']) and is_array($a['record'])){
+	    $a['form']['addressing']['content']['alternativeemail'] = array(
+	      'type' => 'text',
+	      'size' => 40,
+	      'label'=> $this->gettext('alternativeemail'),
+	    );
+	    
+	    $rcmail = rcmail::get_instance();
+		  $sql_result = $rcmail->db->query('SELECT alternative_email FROM forgot_password ' .
+														' WHERE user_id = ? ', $rcmail->user->ID);
+		  $userrec = $rcmail->db->fetch_assoc($sql_result);
+	    
+	    if (isset($userrec['alternative_email'])){
+	      $a['record']['alternativeemail'] = $userrec['alternative_email'];
+	    }
+	    
+    }
+	  return $a;
 
-	function add_field_alternative_email_to_form() 
+	}
+	
+	function update_alternative_email($a) 
+	{
+	  if(isset($a['record']['alternativeemail'])) 
+	  {
+	    $alternative_email = $a['record']['alternativeemail'];	    
+	  } else if (isset($_POST['_alternativeemail']))  {
+      $alternative_email = get_input_value('_alternativeemail', RCUBE_INPUT_POST, true);
+	  } else {
+	    return $a;
+	  }
+	  
+	  $rcmail = rcmail::get_instance();
+	  $alternative_email = rcube_idn_to_ascii($alternative_email);
+	  if($alternative_email && check_email($alternative_email)) //preg_match('/.+@[^.]+\..+/Umi',$alternative_email)
+	  {
+		  $sql_result = $rcmail->db->query('SELECT alternative_email FROM forgot_password ' .
+											  ' WHERE user_id = ? ', $rcmail->user->ID);
+		  $userrec = $rcmail->db->fetch_assoc($sql_result);
+		  $log_message = null;
+		  if(!$userrec) 
+		  {
+		    $rcmail->db->query("INSERT INTO forgot_password(alternative_email, user_id) values(?,?)",$alternative_email,$rcmail->user->ID);
+		    $this->send_email_with_notification(
+		                      $rcmail->user->get_username(),'alternative_email_updated', 
+		                      array('new_alternative' => $alternative_email, 'IP' => rcmail_remote_ip()));
+		    $log_message = sprintf('Created alternative email for user %s (ID: %d) from %s: %s',
+                          $rcmail->user->get_username(), $rcmail->user->ID, rcmail_remote_ip(), $alternative_email);
+		  
+		  } else if ($userrec['alternative_email'] != $alternative_email) {
+		    $rcmail->db->query("UPDATE forgot_password SET alternative_email = ? WHERE user_id = ?",$alternative_email,$rcmail->user->ID);
+		    $this->send_email_with_notification(
+		                      array($rcmail->user->get_username(), $userrec['alternative_email']), 'alternative_email_updated', 
+		                      array('new_alternative' => $alternative_email, 'IP' => rcmail_remote_ip()));
+			  $log_message = sprintf('Updated alternative email for user %s (ID: %d) from %s: %s -> %s',
+                          $rcmail->user->get_username(), $rcmail->user->ID, rcmail_remote_ip(), $userrec['alternative_email'],
+                          $alternative_email);
+		  }
+		  
+		  if($log_message)
+		  { 
+		    write_log('forgot_password', $log_message);
+		    $message = $this->gettext('alternative_email_updated','forgot_password');
+		    $rcmail->output->command('display_message', $message, 'confirmation', MESSAGE_TIMEOUT);
+	    }
+	    
+	  } else {
+		  $message = $this->gettext('alternative_email_invalid','forgot_password');
+		  $rcmail->output->command('display_message', $message, 'error', MESSAGE_TIMEOUT);
+		  $a['abort'] = true;
+	  }
+	  
+	  return $a;
+	}
+
+	/*function add_field_alternative_email_to_form() 
 	{
 		$rcmail = rcmail::get_instance();
 		$sql_result = $rcmail->db->query('SELECT alternative_email FROM forgot_password ' .
@@ -73,9 +153,9 @@ class forgot_password extends rcube_plugin
 		$rcmail->output->add_script($js);
 		//disable password plugin's javascript validation
 		$this->include_script('js/change_save_button.js');
-	}
+	}*/
 
-	function password_save() 
+	/*function password_save() 
 	{
 		$rcmail = rcmail::get_instance();
 		$alternative_email = get_input_value('_alternative_email',RCUBE_INPUT_POST);
@@ -113,7 +193,7 @@ class forgot_password extends rcube_plugin
 			rcmail_overwrite_action('plugin.password');
 			$rcmail->output->send('plugin');
 		}
-	}
+	}*/
 
 	function show_warning_alternative_email()
 	{
@@ -123,9 +203,23 @@ class forgot_password extends rcube_plugin
 
 		if(!$userrec['alternative_email'] && !isset($_SESSION['show_warning_alternative_email']))
 		{
-			$link = "<a href='/?_task=settings&_action=plugin.password'>". $this->gettext('click_here','forgot_password') ."</a>";
-			$message = sprintf($this->gettext('notice_no_alternative_email_warning','forgot_password'),$link);
-			$rcmail->output->command('display_message', $message, 'notice');
+		  $link = "<a href='/?_task=settings&_action=identities'>". $this->gettext('click_here','forgot_password') ."</a>";
+		  $body = sprintf($this->gettext('notice_no_alternative_email_warning','forgot_password'),$link);
+		  $title = $this->gettext('alternativeemail');
+		  $file = dirname(__FILE__).'/'.$this->local_skin_path().'/templates/alternative_email_alert.html';
+		  
+		  if (is_file($file) && is_readable($file)) {
+		    $message = strtr(file_get_contents($file), array(
+		      '[HEADER]'  => $this->gettext('no_alternative_email_warning'),
+		      '[BODY]'    => $body,
+		      ));
+	    } else {
+	      $message = $this->gettext('no_alternative_email_warning');
+		    $message .= '<br><br>' . $body;
+	    }
+			//$rcmail->output->command('display_message', $message, 'notice');
+			//$rcmail->output->command('show_popup_dialog', $message, $title);
+			$rcmail->output->command('show_altmail_alert', $message, $title);
 			$_SESSION['show_warning_alternative_email'] = false;
 		}
 	}
@@ -284,6 +378,32 @@ class forgot_password extends rcube_plugin
 		$rcmail->output->add_script('rcmail.message_time = 10000;');
 
 		return $a;
+	}
+	
+	private function send_email_with_notification($email, $notification_name, $data = array()) 
+	{
+		$rcmail = rcmail::get_instance();
+		
+		$file = dirname(__FILE__)."/localization/{$rcmail->config->get('language')}/{$notification_name}.html";
+		$content_data = array();
+		foreach($data as $key => $value) {
+		  $content_data["[{$key}]"] = $value;
+		}		
+		$body = strtr(file_get_contents($file), $content_data);
+		$subject = $rcmail->gettext($notification_name,'forgot_password');
+
+    if(!is_array($email)) {
+      $email = array($email,);
+    }
+    foreach($email as $e) 
+    {
+		  $this->send_html_and_text_email(
+			  $e,
+			  $this->get_from_email($e),
+			  $subject,
+			  $body
+		  );
+	  }
 	}
 
 	private function send_email_with_token($user_id, $email, $alternative_email) 
