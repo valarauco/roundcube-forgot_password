@@ -17,6 +17,7 @@ class forgot_password extends rcube_plugin
 	function init() 
 	{
 		define('TOKEN_EXPIRATION_TIME_MIN', 10);
+		define('MESSAGE_TIMEOUT', 10000);
 		$rcmail = rcmail::get_instance();
 		$this->add_texts('localization/');
 
@@ -202,10 +203,19 @@ class forgot_password extends rcube_plugin
 		$rcmail = rcmail::get_instance();
 
 		//user must be user@domain
-		$user = trim(urldecode($_GET['_username']));
-
-		if($user) 
-		{
+		$user = trim(urldecode(get_input_value('_username',RCUBE_INPUT_POST)));
+		
+		$def_domain = $rcmail->config->get('username_domain', false);
+		// Check if we need to add domain
+    if (!empty($def_domain) && strpos($user, '@') === false) {
+      //if (is_array($def_domain) && isset($def_domain[$host]))
+      //  $user .= '@'.rcube_parse_host($config['username_domain'][$host], $host);
+      //else            // TODO How to get the HOST?
+      if (is_string($def_domain))
+        $user .= '@'.rcube_parse_host($def_domain);
+    }
+    
+    if($user && check_email($user)) {
 			// get user row
 			$sql_result = $rcmail->db->query("SELECT u.user_id, u.username, fp.alternative_email, fp.token_expiration, fp.token_expiration < now() as token_expired " .
 											"	FROM ".get_table_name('users')." u " .
@@ -245,7 +255,8 @@ class forgot_password extends rcube_plugin
 			$type = 'error';
 		}
 
-		$rcmail->output->command('display_message', $message, $type);
+		$rcmail->output->command('display_message', $message, $type,MESSAGE_TIMEOUT);
+		$rcmail->output->command('show_popup_dialog', $message, $this->gettext('forgotpassword','forgot_password'));
 		$rcmail->kill_session();
 		$_POST['_user'] = $user;
 		$rcmail->output->send('login');
@@ -315,13 +326,27 @@ class forgot_password extends rcube_plugin
 
 	private function get_from_email($email) 
 	{
-		$parts = explode('@',$email);
-		return 'no-reply@'.$parts[1];
+	  $rcmail = rcmail::get_instance();
+	  $from = $rcmail->config->get('smtp_user');
+	  if($rcmail->config->get('default_smtp_relay_allowed',false)) 
+	  {
+		  $parts = explode('@',$email);
+		  $from = 'no-reply@'.$parts[1];
+	  } else if($rcmail->config->get('smtp_pass') == "%p") {
+	    $from = $rcmail->config->get('default_smtp_user');
+	  }
+	  return $from;
 	}
 
 	private function send_html_and_text_email($to, $from, $subject, $body) 
 	{
 		$rcmail = rcmail::get_instance();
+		
+		// encoding subject header with mb_encode provides better results with asian characters
+    if (function_exists('mb_encode_mimeheader')) {
+      mb_internal_encoding(RCMAIL_CHARSET);
+      $subject = mb_encode_mimeheader($subject, RCMAIL_CHARSET, 'Q', "\r\n", 8);
+    }
 
 		$ctb = md5(rand() . microtime());
 		$headers  = "Return-Path: $from\r\n";

@@ -20,7 +20,7 @@ $labels = array(
 	'forgot_passwordexit' => 'Cancelar',
 	'new_password' => 'Nueva contraseña',
 	'new_password_confirmation' => 'Repita la contraseña',
-	'no_alternative_email_warning' => 'Es necesario establecer un correo electrónico alternativo',
+	'no_alternative_email_warning' => 'Es necesario establecer un correo electrónico alternativo.',
 	'click_here' => 'haga clic aquí'
 );
 
@@ -43,7 +43,7 @@ $messages = array(
 	'password_confirmation_invalid' => 'Confirmación de la contraseña no es válida',
 	'password_changed' => 'Contraseña cambiada con éxito',
 	'password_not_changed' => 'Se ha producido un error, inténtalo de nuevo más tarde.',
-	'notice_no_alternative_email_warning' => 'No tienes un correo electrónico altermativo, %s para registrarlo.',
+	'notice_no_alternative_email_warning' => 'No ha configurado un correo electrónico altermativo, %s y selecciones su identidad para registrarlo.',
 	'alternative_email_updated' => 'Su dirección de correo electrónico alternativa ha cambiado.',
 	'alternative_email_invalid' => 'Correo electrónico alternativo no válido'
 );
