@@ -2,6 +2,7 @@
 
 $labels = array(
 	'alternativeemail' => 'Email alternativo',
+	'alternativeemail_input' => 'Introduzca su dirección de correo alternativo',
 	'forgotpassword' => 'Olvidé mi contraseña',
 	'passwordrecovery' => 'Olvidé mi contraseña',
 	'email_subject' => 'Instrucciones para definir una nueva contraseña',
